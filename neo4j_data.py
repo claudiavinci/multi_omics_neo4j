@@ -1,12 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import pandas as pd 
 from dataset_converter import N_FILES, CSV_PATH
-from pathlib import Path
-
-# csv_all["data_cna.csv"][["Hugo_Symbol"]],
-# csv_all["data_mrna_seq_v2_rsem_zscores_ref_all_samples.csv"][["Hugo_Symbol"]],
-# csv_all["data_sv.csv"][["Site1_Hugo_Symbol"]].rename(columns={"Site1_Hugo_Symbol": "Hugo_Symbol"}),
-# csv_all["data_sv.csv"][["Site2_Hugo_Symbol"]].rename(columns={"Site2_Hugo_Symbol": "Hugo_Symbol"})    
+from pathlib import Path 
 
 def create_gene_entity(csv_all):
     print("Creating Gene entity...")
