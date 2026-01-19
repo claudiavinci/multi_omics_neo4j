@@ -16,7 +16,7 @@ def dataset_to_CSV(filename):
     print(f"Opening {filename} ...")
     try:
         filepath = PATH + filename
-        df = pd.read_csv(filepath, sep="\t", encoding='utf-8', low_memory=False)
+        df = pd.read_csv(filepath, sep="\t", encoding='utf-8', low_memory=False, comment="#")
         df = df.dropna(how='all')
         output_file = filename.replace(".txt", ".csv")
         df.to_csv(CSV_PATH + output_file, index=False)
