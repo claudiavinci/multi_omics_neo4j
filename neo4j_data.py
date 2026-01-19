@@ -3,6 +3,13 @@ import pandas as pd
 from dataset_converter import N_FILES, CSV_PATH
 from pathlib import Path 
 
+def format_dataframe(df, label, id_col):
+    df.columns = [col.lower() for col in df.columns]
+    df = df.rename(columns={id_col.lower(): ":ID"})
+    df.insert(1, ":LABEL", label)
+    print(f"Created {label} entity with {len(df)} records and columns: {df.columns.tolist()}")
+    return df
+
 def create_gene_entity(csv_all):
     print("Creating Gene entity...")
     gene_df = csv_all["data_mutations.csv"][["Hugo_Symbol", "Entrez_Gene_Id", "Chromosome"]].dropna(subset=["Hugo_Symbol"]).copy() 
@@ -18,25 +25,16 @@ def create_gene_entity(csv_all):
                         (mrna_genes, ["Hugo_Symbol", "Entrez_Gene_Id"]),
                         (sv_genes, ["Hugo_Symbol", "Chromosome"]),
                         (proteins_genes["Hugo_Symbol"], ["Hugo_Symbol"])]:
-        gene_df = gene_df.merge(df, on=on_cols, how="outer").drop_duplicates(subset=["Hugo_Symbol"])
-    gene_df.columns = [col.lower() for col in gene_df.columns]
-    gene_df = gene_df.rename(columns={
-        "hugo_symbol": ":ID",
-    })
-    gene_df.insert(1, ":LABEL", "Gene")
-    print(f"Created Gene entity with {len(gene_df)} records and columns: {gene_df.columns.tolist()}")
+        gene_df = gene_df.merge(df, on=on_cols, how="outer").drop_duplicates()
+
+    gene_df = format_dataframe(gene_df, "Gene", "Hugo_Symbol")
     return gene_df
 
 def create_protein_entity(proteins_csv):
     print("Creating Protein entity...")
     protein_df = proteins_csv[["Composite.Element.REF"]].dropna(subset=["Composite.Element.REF"]).drop_duplicates().copy()
     protein_df["Protein_Name"] = protein_df["Composite.Element.REF"].str.split("|").str[1].copy()
-    protein_df = protein_df.rename(columns={
-        "Composite.Element.REF": ":ID",
-        "Protein_Name": "protein_name"
-    })
-    protein_df.insert(1, ":LABEL", "Protein")
-    print(f"Created Protein entity with {len(protein_df)} records and columns: {protein_df.columns.tolist()}")
+    protein_df = format_dataframe(protein_df, "Protein", "Composite.Element.REF")
     return protein_df
 
 def create_patient_entity(patients_csv):
@@ -60,12 +58,7 @@ def create_patient_entity(patients_csv):
     ] 
     patients_df = patients_csv[patient_cols].dropna(subset=["PATIENT_ID"]).copy()
 
-    patients_df.columns = [col.lower() for col in patients_df.columns]
-    patients_df = patients_df.rename(columns={
-        "patient_id": ":ID"
-    })
-    patients_df.insert(1, ":LABEL", "Patient")
-    print(f"Created Patient entity with {len(patients_df)} records and columns: {patients_df.columns.tolist()}")
+    patients_df = format_dataframe(patients_df, "Patient", "PATIENT_ID")
     return patients_df
 
 def create_sample_entity():
