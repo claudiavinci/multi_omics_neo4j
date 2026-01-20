@@ -61,7 +61,66 @@ def create_patient_entity(patients_csv):
     patients_df = format_dataframe(patients_df, "Patient", "PATIENT_ID")
     return patients_df
 
-def create_sample_entity():
+def create_sample_entity(samples):
+    print("Creating Sample entity...")
+    sample_cols = [
+        "SAMPLE_ID",                 # chiave primaria Sample
+        "ONCOTREE_CODE",
+        "CANCER_TYPE",
+        "CANCER_TYPE_DETAILED",
+        "TUMOR_TYPE",
+        "GRADE",
+        "SAMPLE_TYPE",
+        "TUMOR_TISSUE_SITE",
+        "ANEUPLOIDY_SCORE",
+        "TMB_NONSYNONYMOUS",
+        "MSI_SCORE_MANTIS",
+        "TISSUE_SOURCE_SITE",
+        "TISSUE_SOURCE_SITE_CODE"
+    ]
+    sample_df = samples[sample_cols].dropna(subset=["SAMPLE_ID"]).copy()
+    sample_df = format_dataframe(sample_df, "Sample", "SAMPLE_ID")
+    return sample_df
+
+def create_mutation_entity():
+    mutation_cols = [
+        # "Hugo_Symbol",
+        # "Tumor_Sample_Barcode",
+        # identificazione genomica
+        "Chromosome",
+        "Start_Position",
+        "End_Position",
+        "Reference_Allele",
+        "Tumor_Seq_Allele2",
+        # tipo di mutazione
+        "Variant_Classification",
+        "Variant_Type",
+        "Mutation_Status",
+        # effetto molecolare
+        "HGVSc",
+        "HGVSp_Short",
+        "Protein_position",
+        "EXON",
+        "Codons",
+        "Amino_acids",
+        # impatto funzionale
+        "IMPACT",       
+        "SIFT",         
+        "PolyPhen",
+        # annotazioni cliniche/oncologiche
+        "Hotspot",
+        "CLIN_SIG",
+        # COSMIC -> indica se la mutazione è presente nel database COSMIC
+        "COSMIC",
+        # qualità delle reads, permettono di calcolare anche la VAF (variant allele frequency) VAF = t_alt_count / t_depth
+        "t_alt_count",
+        "t_ref_count",
+        "t_depth"
+
+    ]
+    pass
+
+def create_cna_entity():
     pass
 
 def create_sv_entity():
