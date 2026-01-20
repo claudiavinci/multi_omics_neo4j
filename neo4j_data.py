@@ -1,7 +1,9 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
+# from concurrent.futures import ThreadPoolExecutor, as_completed
 import pandas as pd 
-from dataset_converter import N_FILES, CSV_PATH
-from pathlib import Path 
+from dataset_loader import DatasetLoader
+
+N_FILES = 8
+FILE_PATH = "./TCGA_BRCA_sel/data/"
 
 def format_dataframe(df, label, id_col):
     df.columns = [col.lower() for col in df.columns]
@@ -12,13 +14,13 @@ def format_dataframe(df, label, id_col):
 
 def create_gene_entity(csv_all):
     print("Creating Gene entity...")
-    gene_df = csv_all["data_mutations.csv"][["Hugo_Symbol", "Entrez_Gene_Id", "Chromosome"]].dropna(subset=["Hugo_Symbol"]).copy() 
-    proteins_genes = csv_all["data_protein_quantification_zscores.csv"][["Composite.Element.REF"]].dropna(subset=["Composite.Element.REF"]).copy()
+    gene_df = csv_all["data_mutations.txt"][["Hugo_Symbol", "Entrez_Gene_Id", "Chromosome"]].dropna(subset=["Hugo_Symbol"]).copy() 
+    proteins_genes = csv_all["data_protein_quantification_zscores.txt"][["Composite.Element.REF"]].dropna(subset=["Composite.Element.REF"]).copy()
     proteins_genes["Hugo_Symbol"] = proteins_genes["Composite.Element.REF"].str.split("|").str[0]
-    cna_genes = csv_all["data_cna.csv"][["Hugo_Symbol", "Entrez_Gene_Id"]].dropna(subset=["Hugo_Symbol"]).copy()
-    mrna_genes = csv_all["data_mrna_seq_v2_rsem_zscores_ref_all_samples.csv"][["Hugo_Symbol", "Entrez_Gene_Id"]].dropna(subset=["Hugo_Symbol"]).copy()
-    sv1 = csv_all["data_sv.csv"][["Site1_Hugo_Symbol", "Site1_Chromosome"]].rename(columns={"Site1_Hugo_Symbol": "Hugo_Symbol", "Site1_Chromosome": "Chromosome"})
-    sv2 = csv_all["data_sv.csv"][["Site2_Hugo_Symbol", "Site2_Chromosome"]].rename(columns={"Site2_Hugo_Symbol": "Hugo_Symbol", "Site2_Chromosome": "Chromosome"})
+    cna_genes = csv_all["data_cna.txt"][["Hugo_Symbol", "Entrez_Gene_Id"]].dropna(subset=["Hugo_Symbol"]).copy()
+    mrna_genes = csv_all["data_mrna_seq_v2_rsem_zscores_ref_all_samples.txt"][["Hugo_Symbol", "Entrez_Gene_Id"]].dropna(subset=["Hugo_Symbol"]).copy()
+    sv1 = csv_all["data_sv.txt"][["Site1_Hugo_Symbol", "Site1_Chromosome"]].rename(columns={"Site1_Hugo_Symbol": "Hugo_Symbol", "Site1_Chromosome": "Chromosome"})
+    sv2 = csv_all["data_sv.txt"][["Site2_Hugo_Symbol", "Site2_Chromosome"]].rename(columns={"Site2_Hugo_Symbol": "Hugo_Symbol", "Site2_Chromosome": "Chromosome"})
     sv_genes = pd.concat([sv1, sv2]).dropna(subset=["Hugo_Symbol"]).copy()
 
     for df, on_cols in [(cna_genes, ["Hugo_Symbol", "Entrez_Gene_Id"]),
@@ -82,9 +84,9 @@ def create_sample_entity(samples):
     sample_df = format_dataframe(sample_df, "Sample", "SAMPLE_ID")
     return sample_df
 
-def create_mutation_entity():
+def create_mutation_entity(mutations):
     mutation_cols = [
-        # "Hugo_Symbol",
+        "Hugo_Symbol",
         # "Tumor_Sample_Barcode",
         # identificazione genomica
         "Chromosome",
@@ -116,9 +118,13 @@ def create_mutation_entity():
         "t_alt_count",
         "t_ref_count",
         "t_depth"
-
     ]
-    pass
+    mutation_df = mutations[mutation_cols].dropna(subset=["Hugo_Symbol", "Chromosome", "Start_Position", "Reference_Allele", "Tumor_Seq_Allele2"]).copy()
+    id = mutation_df["Hugo_Symbol"] + ":" + mutation_df["Chromosome"].astype(str) + ":" + mutation_df["Start_Position"].astype(str) + ":" + mutation_df["Reference_Allele"] + ">" + mutation_df["Tumor_Seq_Allele2"]
+    mutation_df.insert(0, ":ID", id)
+    mutation_df.drop(columns=["Hugo_Symbol"], inplace=True)
+    mutation_df = format_dataframe(mutation_df, "Mutation", ":ID")
+    return mutation_df
 
 def create_cna_entity():
     pass
@@ -135,17 +141,15 @@ def read_CSV(file):
     return file.name, df
 
 if __name__ == "__main__":
-    csv_all = {}
-    # csv_all è un dizionario con chiave il nome del file e valore il dataframe corrispondente
-    csv_files = list(Path(CSV_PATH).glob("*.csv"))
-    with ThreadPoolExecutor(max_workers=N_FILES) as executor:
-        futures = [executor.submit(read_CSV, file) for file in csv_files]
-        for future in as_completed(futures):
-            file_name, df = future.result()
-            csv_all[file_name] = df
+    loader = DatasetLoader(files_path=FILE_PATH, n_files=N_FILES)
+
+    csv_all = loader.load_dataset()
 
     gene_df =create_gene_entity(csv_all)
-    protein_df = create_protein_entity(csv_all["data_protein_quantification_zscores.csv"])
-    patient_df = create_patient_entity(csv_all["data_clinical_patient.csv"])
-
+    protein_df = create_protein_entity(csv_all["data_protein_quantification_zscores.txt"])
+    patient_df = create_patient_entity(csv_all["data_clinical_patient.txt"])
+    sample_df = create_sample_entity(csv_all["data_clinical_sample.txt"])
+    mutation_df = create_mutation_entity(csv_all["data_mutations.txt"])
+    print(mutation_df.head())
+    print(sample_df.head())
 # per le relazioni dovrò rileggere tutti i file

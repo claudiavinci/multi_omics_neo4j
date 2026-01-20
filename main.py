@@ -1,5 +1,5 @@
 import docker
-from connection import neo4jConnection
+from neo4j_connection import neo4jConnection
 
 if __name__ == '__main__':
     
