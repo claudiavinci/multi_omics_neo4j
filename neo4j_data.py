@@ -4,6 +4,15 @@ from dataset_loader import DatasetLoader
 
 N_FILES = 8
 FILE_PATH = "./TCGA_BRCA_sel/data/"
+RENAME_MAP = {
+            "data_clinical_patient.txt": "patients",
+            "data_clinical_sample.txt": "samples",
+            "data_mutations.txt": "mutations",
+            "data_protein_quantification_zscores.txt": "proteins",
+            "data_cna.txt": "cna",
+            "data_mrna_seq_v2_rsem_zscores_ref_all_samples.txt": "mrna",
+            "data_sv.txt": "sv"
+        }
 
 def format_dataframe(df, label, id_col, id_list=None, drop_cols: list = None):
     if drop_cols:
@@ -18,15 +27,15 @@ def format_dataframe(df, label, id_col, id_list=None, drop_cols: list = None):
     print(df.head())
     return df
 
-def create_gene_entity(csv_all):
+def create_gene_entity(all_data):
     print("Creating Gene entity...")
-    gene_df = csv_all["data_mutations.txt"][["Hugo_Symbol", "Entrez_Gene_Id", "Chromosome"]].dropna(subset=["Hugo_Symbol"]).copy() 
-    proteins_genes = csv_all["data_protein_quantification_zscores.txt"][["Composite.Element.REF"]].dropna().copy()
+    gene_df = all_data["mutations"][["Hugo_Symbol", "Entrez_Gene_Id", "Chromosome"]].dropna(subset=["Hugo_Symbol"]).copy() 
+    proteins_genes = all_data["proteins"][["Composite.Element.REF"]].dropna().copy()
     proteins_genes["Hugo_Symbol"] = proteins_genes["Composite.Element.REF"].str.split("|").str[0]
-    cna_genes = csv_all["data_cna.txt"][["Hugo_Symbol", "Entrez_Gene_Id"]].dropna(subset=["Hugo_Symbol"]).copy()
-    mrna_genes = csv_all["data_mrna_seq_v2_rsem_zscores_ref_all_samples.txt"][["Hugo_Symbol", "Entrez_Gene_Id"]].dropna(subset=["Hugo_Symbol"]).copy()
-    sv1 = csv_all["data_sv.txt"][["Site1_Hugo_Symbol"]].rename(columns={"Site1_Hugo_Symbol": "Hugo_Symbol"})
-    sv2 = csv_all["data_sv.txt"][["Site2_Hugo_Symbol"]].rename(columns={"Site2_Hugo_Symbol": "Hugo_Symbol"})
+    cna_genes = all_data["cna"][["Hugo_Symbol", "Entrez_Gene_Id"]].dropna(subset=["Hugo_Symbol"]).copy()
+    mrna_genes = all_data["mrna"][["Hugo_Symbol", "Entrez_Gene_Id"]].dropna(subset=["Hugo_Symbol"]).copy()
+    sv1 = all_data["sv"][["Site1_Hugo_Symbol"]].rename(columns={"Site1_Hugo_Symbol": "Hugo_Symbol"})
+    sv2 = all_data["sv"][["Site2_Hugo_Symbol"]].rename(columns={"Site2_Hugo_Symbol": "Hugo_Symbol"})
     sv_genes = pd.concat([sv1, sv2]).dropna(subset=["Hugo_Symbol"]).copy()
 
     for df, on_cols in [(cna_genes, ["Hugo_Symbol", "Entrez_Gene_Id"]),
@@ -38,14 +47,14 @@ def create_gene_entity(csv_all):
     gene_df = format_dataframe(gene_df, "Gene", "Hugo_Symbol")
     return gene_df
 
-def create_protein_entity(proteins_csv):
+def create_protein_entity(proteins):
     print("Creating Protein entity...")
-    protein_df = proteins_csv[["Composite.Element.REF"]].dropna(subset=["Composite.Element.REF"]).drop_duplicates().copy()
+    protein_df = proteins[["Composite.Element.REF"]].dropna(subset=["Composite.Element.REF"]).drop_duplicates().copy()
     protein_df["Protein_Name"] = protein_df["Composite.Element.REF"].str.split("|").str[1].copy()
     protein_df = format_dataframe(protein_df, "Protein", "Composite.Element.REF")
     return protein_df
 
-def create_patient_entity(patients_csv):
+def create_patient_entity(patients):
     print("Creating Patient entity...")
     patient_cols = [
         "PATIENT_ID",
@@ -64,7 +73,7 @@ def create_patient_entity(patients_csv):
         "OS_MONTHS",
         "DAYS_LAST_FOLLOWUP"
     ] 
-    patients_df = patients_csv[patient_cols].dropna(subset=["PATIENT_ID"]).copy()
+    patients_df = patients[patient_cols].dropna(subset=["PATIENT_ID"]).copy()
     patients_df = format_dataframe(patients_df, "Patient", "PATIENT_ID")
     return patients_df
 
@@ -138,24 +147,19 @@ def create_sv_entity(sv_csv):
     sv_IDs = sv_df["Sample_Id"] + "|" +sv_df["Site1_Chromosome"].astype(str) + ":" + sv_df["Site1_Position"].astype(str) + "|" + sv_df["Site2_Chromosome"].astype(str) + ":" + sv_df["Site2_Position"].astype(str)
     sv_df = format_dataframe(sv_df, "Structural_Variant", ":ID", id_list=sv_IDs, drop_cols=["Sample_Id","Site1_Hugo_Symbol", "Site2_Hugo_Symbol"])
 
-def create_relationship():
+def create_relationship(entities: dict, start_entity, end_entity, rel_type, properties: dict = None): 
     pass
 
-def read_CSV(file):
-    df = pd.read_csv(file, sep=",", encoding='utf-8', low_memory=False)
-    print(f"Reading file: {file.name} with {len(df)} records.")
-    return file.name, df
-
 if __name__ == "__main__":
-    loader = DatasetLoader(files_path=FILE_PATH, n_files=N_FILES)
+    loader = DatasetLoader(files_path=FILE_PATH, n_files=N_FILES, rename_map=RENAME_MAP)
 
-    csv_all = loader.load_dataset()
+    all_data = loader.load_dataset()
 
-    gene_df =create_gene_entity(csv_all)
-    protein_df = create_protein_entity(csv_all["data_protein_quantification_zscores.txt"])
-    patient_df = create_patient_entity(csv_all["data_clinical_patient.txt"])
-    sample_df = create_sample_entity(csv_all["data_clinical_sample.txt"])
-    mutation_df = create_mutation_entity(csv_all["data_mutations.txt"])
-    sv_df = create_sv_entity(csv_all["data_sv.txt"])
+    gene_df =create_gene_entity(all_data)
+    protein_df = create_protein_entity(all_data["proteins"])
+    patient_df = create_patient_entity(all_data["patients"])
+    sample_df = create_sample_entity(all_data["samples"])
+    mutation_df = create_mutation_entity(all_data["mutations"])
+    sv_df = create_sv_entity(all_data["sv"])
     
 # per le relazioni dovrò rileggere tutti i file
