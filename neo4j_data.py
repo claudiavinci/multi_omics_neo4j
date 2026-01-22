@@ -1,20 +1,7 @@
 # from concurrent.futures import ThreadPoolExecutor, as_completed
 import pandas as pd 
-from dataset_loader import DatasetLoader
 
-N_FILES = 8
-FILE_PATH = "./TCGA_BRCA_sel/data/"
-RENAME_MAP = {
-            "data_clinical_patient.txt": "patients",
-            "data_clinical_sample.txt": "samples",
-            "data_mutations.txt": "mutations",
-            "data_protein_quantification_zscores.txt": "proteins",
-            "data_cna.txt": "cna",
-            "data_mrna_seq_v2_rsem_zscores_ref_all_samples.txt": "mrna",
-            "data_sv.txt": "sv"
-        }
-
-def format_dataframe(df, label, id_col, id_list=None, drop_cols: list = None):
+def format_entity(df, label, id_col, id_list=None, drop_cols: list = None):
     if drop_cols:
         df.drop(columns=drop_cols, inplace=True)
     df.columns = [col.lower() for col in df.columns]
@@ -23,12 +10,10 @@ def format_dataframe(df, label, id_col, id_list=None, drop_cols: list = None):
     else:
         df = df.rename(columns={id_col.lower(): ":ID"})
     df.insert(1, ":LABEL", label)
-    print(f"Created {label} entity with {len(df)} records and columns: {df.columns.tolist()}")
-    print(df.head())
+    print(f"Created {label} entity with {len(df)} records and {len(df.columns)} columns")
     return df
 
 def create_gene_entity(all_data):
-    print("Creating Gene entity...")
     gene_df = all_data["mutations"][["Hugo_Symbol", "Entrez_Gene_Id", "Chromosome"]].dropna(subset=["Hugo_Symbol"]).copy() 
     proteins_genes = all_data["proteins"][["Composite.Element.REF"]].dropna().copy()
     proteins_genes["Hugo_Symbol"] = proteins_genes["Composite.Element.REF"].str.split("|").str[0]
@@ -44,18 +29,16 @@ def create_gene_entity(all_data):
                         (proteins_genes["Hugo_Symbol"], ["Hugo_Symbol"])]:
         gene_df = gene_df.merge(df, on=on_cols, how="outer").drop_duplicates()
 
-    gene_df = format_dataframe(gene_df, "Gene", "Hugo_Symbol")
+    gene_df = format_entity(gene_df, "Gene", "Hugo_Symbol")
     return gene_df
 
 def create_protein_entity(proteins):
-    print("Creating Protein entity...")
-    protein_df = proteins[["Composite.Element.REF"]].dropna(subset=["Composite.Element.REF"]).drop_duplicates().copy()
-    protein_df["Protein_Name"] = protein_df["Composite.Element.REF"].str.split("|").str[1].copy()
-    protein_df = format_dataframe(protein_df, "Protein", "Composite.Element.REF")
-    return protein_df
+    df = proteins[["Composite.Element.REF"]].dropna(subset=["Composite.Element.REF"]).drop_duplicates().copy()
+    df["Protein_Name"] = df["Composite.Element.REF"].str.split("|").str[1].copy()
+    df = format_entity(df, "Protein", "Composite.Element.REF")
+    return df
 
 def create_patient_entity(patients):
-    print("Creating Patient entity...")
     patient_cols = [
         "PATIENT_ID",
         "AGE",
@@ -73,12 +56,11 @@ def create_patient_entity(patients):
         "OS_MONTHS",
         "DAYS_LAST_FOLLOWUP"
     ] 
-    patients_df = patients[patient_cols].dropna(subset=["PATIENT_ID"]).copy()
-    patients_df = format_dataframe(patients_df, "Patient", "PATIENT_ID")
-    return patients_df
+    df = patients[patient_cols].dropna(subset=["PATIENT_ID"]).copy()
+    df = format_entity(df, "Patient", "PATIENT_ID")
+    return df
 
 def create_sample_entity(samples):
-    print("Creating Sample entity...")
     sample_cols = [
         "SAMPLE_ID",                 # chiave primaria Sample
         "ONCOTREE_CODE",
@@ -94,9 +76,9 @@ def create_sample_entity(samples):
         "TISSUE_SOURCE_SITE",
         "TISSUE_SOURCE_SITE_CODE"
     ]
-    sample_df = samples[sample_cols].dropna(subset=["SAMPLE_ID"]).copy()
-    sample_df = format_dataframe(sample_df, "Sample", "SAMPLE_ID")
-    return sample_df
+    df = samples[sample_cols].dropna(subset=["SAMPLE_ID"]).copy()
+    df = format_entity(df, "Sample", "SAMPLE_ID")
+    return df
 
 def create_mutation_entity(mutations):
     mutation_cols = [
@@ -133,33 +115,40 @@ def create_mutation_entity(mutations):
         "t_ref_count",
         "t_depth"
     ]
-    mutation_df = mutations[mutation_cols].dropna(subset=["Hugo_Symbol", "Chromosome", "Start_Position", "Reference_Allele", "Tumor_Seq_Allele2"]).copy()
-    mutation_IDs = mutation_df["Hugo_Symbol"] + ":" + mutation_df["Chromosome"].astype(str) + ":" + mutation_df["Start_Position"].astype(str) + ":" + mutation_df["Reference_Allele"] + ">" + mutation_df["Tumor_Seq_Allele2"]
-    mutation_df = format_dataframe(mutation_df, "Mutation", ":ID", id_list=mutation_IDs, drop_cols=["Hugo_Symbol"])
-    return mutation_df
+    df = mutations[mutation_cols].dropna(subset=["Hugo_Symbol", "Chromosome", "Start_Position", "Reference_Allele", "Tumor_Seq_Allele2"]).copy()
+    IDs = df["Hugo_Symbol"] + ":" + df["Chromosome"].astype(str) + ":" + df["Start_Position"].astype(str) + ":" + df["Reference_Allele"] + ">" + df["Tumor_Seq_Allele2"]
+    df = format_entity(df, "Mutation", ":ID", id_list=IDs, drop_cols=["Hugo_Symbol"])
+    return df
+
+def create_sv_entity(sv):
+    df = sv.dropna(subset=["Sample_Id", "Site1_Chromosome", "Site1_Position", "Site2_Chromosome", "Site2_Position"]).copy()
+    IDs = df["Sample_Id"] + "|" + df["Site1_Chromosome"].astype(str) + ":" + df["Site1_Position"].astype(str) + "|" + df["Site2_Chromosome"].astype(str) + ":" + df["Site2_Position"].astype(str)
+    df = format_entity(df, "Structural_Variant", ":ID", id_list=IDs, drop_cols=["Sample_Id","Site1_Hugo_Symbol", "Site2_Hugo_Symbol"])
+    return df
 
 # def create_cna_entity():
 #     pass
 
-def create_sv_entity(sv_csv):
-    print("Creating SV (Structural Variant) entity...")
-    sv_df = sv_csv.dropna(subset=["Sample_Id", "Site1_Chromosome", "Site1_Position", "Site2_Chromosome", "Site2_Position"]).copy()
-    sv_IDs = sv_df["Sample_Id"] + "|" +sv_df["Site1_Chromosome"].astype(str) + ":" + sv_df["Site1_Position"].astype(str) + "|" + sv_df["Site2_Chromosome"].astype(str) + ":" + sv_df["Site2_Position"].astype(str)
-    sv_df = format_dataframe(sv_df, "Structural_Variant", ":ID", id_list=sv_IDs, drop_cols=["Sample_Id","Site1_Hugo_Symbol", "Site2_Hugo_Symbol"])
+def create_relationship(start_entity, end_entity, rel_type: str, properties: dict = None): 
+    # prendere gli id, aggiungere la colonna che serve per la relazione e creare il dataframe delle relazion 
+    rel = {':START_ID': start_entity, ':END_ID': end_entity, ':TYPE': rel_type}
+    if properties:
+        for key, value in properties.items():
+            rel[key.lower()] = value
+    return rel
 
-def create_relationship(entities: dict, start_entity, end_entity, rel_type, properties: dict = None): 
-    pass
+def create_gene_sv_relationship(sv_data, sv_entity):
+    gene_sv_df = pd.concat([
+        sv_data[['Site1_Hugo_Symbol']].rename(columns={'Site1_Hugo_Symbol': 'gene'}).assign(
+            sv_id=sv_entity[':ID'], site="1"),
+        sv_data[['Site2_Hugo_Symbol']].rename(columns={'Site2_Hugo_Symbol': 'gene'}).assign(
+            sv_id=sv_entity[':ID'], site="2")
+    ], ignore_index=True)
 
-if __name__ == "__main__":
-    loader = DatasetLoader(files_path=FILE_PATH, n_files=N_FILES, rename_map=RENAME_MAP)
-
-    all_data = loader.load_dataset()
-
-    gene_df =create_gene_entity(all_data)
-    protein_df = create_protein_entity(all_data["proteins"])
-    patient_df = create_patient_entity(all_data["patients"])
-    sample_df = create_sample_entity(all_data["samples"])
-    mutation_df = create_mutation_entity(all_data["mutations"])
-    sv_df = create_sv_entity(all_data["sv"])
-    
-# per le relazioni dovrò rileggere tutti i file
+    rel = create_relationship(
+        start_entity = gene_sv_df['gene'],
+        end_entity = gene_sv_df['sv_id'],
+        rel_type = 'HAS_ALTERATION',
+        properties = {'site': gene_sv_df['site']}
+    )
+    return rel 
