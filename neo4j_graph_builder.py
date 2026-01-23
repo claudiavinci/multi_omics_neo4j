@@ -9,9 +9,9 @@ from neo4j_data import (
     create_mutation_entity,
     create_sv_entity,
     # Add more entity creation imports as needed
-    create_relationship,
+    create_simple_relationship,
     create_gene_sv_relationship,
-
+    create_wide_to_long_relationship
 )
 import pandas as pd
 
@@ -37,37 +37,41 @@ class Neo4jGraphBuilder:
     def build_relationships(self):
         print("Building relationships...")
         # Implement relationship creation logic here
-        self.relationships['SAMPLE_FROM_PATIENT'] = create_relationship(
+        self.relationships['SAMPLE_FROM_PATIENT'] = create_simple_relationship(
             start_entity = self.entities['Sample'][':ID'],
             end_entity = self.all_data['samples']['PATIENT_ID'],
             rel_type = 'FROM_PATIENT'
         )
 
-        self.relationships['GENE_ENCODES_PROTEIN'] = create_relationship(
+        self.relationships['GENE_ENCODES_PROTEIN'] = create_simple_relationship(
             start_entity = self.entities['Protein'][':ID'].str.split("|").str[0],
             end_entity = self.entities['Protein'][':ID'],
             rel_type = 'ENCODES'
         )
 
-        self.relationships['GENE_HAS_ALTERATION_MUTATION'] = create_relationship(
+        self.relationships['GENE_HAS_ALTERATION_MUTATION'] = create_simple_relationship(
             start_entity = self.all_data['mutations']['Hugo_Symbol'],
             end_entity = self.entities['Mutation'][':ID'],
             rel_type = 'HAS_ALTERATION'
         )
-        
-        self.relationships['MUTATION_OBSERVED_IN_SAMPLE'] = create_relationship(
-            start_entity= self.entities['Mutation'][':ID'],
-            end_entity= self.all_data['mutations']['Tumor_Sample_Barcode'],
-            rel_type='OBSERVED_IN'
+
+        self.relationships['MUTATION_OBSERVED_IN_SAMPLE'] = create_simple_relationship(
+            start_entity = self.entities['Mutation'][':ID'],
+            end_entity = self.all_data['mutations']['Tumor_Sample_Barcode'],
+            rel_type = 'OBSERVED_IN'
         )
 
         self.relationships['GENE_HAS_ALTERATION_SV'] = create_gene_sv_relationship(self.all_data['sv'], self.entities['Structural_Variant'])
         
-        self.relationships['SV_OBRSERVED_IN_SAMPLE'] = create_relationship(
-            start_entity= self.entities['Structural_Variant'][':ID'],
-            end_entity= self.all_data['sv']['Sample_Id'],
-            rel_type='OBSERVED_IN'
+        self.relationships['SV_OBSERVED_IN_SAMPLE'] = create_simple_relationship(
+            start_entity = self.entities['Structural_Variant'][':ID'],
+            end_entity = self.all_data['sv']['Sample_Id'],
+            rel_type ='OBSERVED_IN'
         )
+
+        self.relationships['GENE_HAS_ALTERATION_CNA_IN'] = create_wide_to_long_relationship(self.all_data['cna'], 'Hugo_Symbol', 'Sample_Id', 'HAS_ALTERATION_CNA_IN', value_name='CNA_Value', drop_cols=['Entrez_Gene_Id'])
+        self.relationships['GENE_EXPRESSED_IN_SAMPLE'] = create_wide_to_long_relationship(self.all_data['mrna'], 'Hugo_Symbol', 'Sample_Id', 'HAS_EXPRESSION_IN', value_name='mRNA_expr_Value', drop_cols=['Entrez_Gene_Id'])
+        self.relationships['PROTEIN_EXPRESSED_IN_SAMPLE'] = create_wide_to_long_relationship(self.all_data['proteins'], 'Composite.Element.REF', 'Sample_Id', 'HAS_EXPRESSION_IN', value_name='Protein_expr_Value')
 
         print(f"Relationships built: {list(self.relationships.keys())}")
 

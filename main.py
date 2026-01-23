@@ -26,3 +26,7 @@ if __name__ == '__main__':
     builder = Neo4jGraphBuilder(all_data)
     builder.build_entities()
     builder.build_relationships()
+    for rel in builder.relationships.keys():
+        print(
+            builder.relationships[rel]
+        )
