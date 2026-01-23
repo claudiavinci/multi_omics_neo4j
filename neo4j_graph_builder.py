@@ -1,5 +1,3 @@
-from html import entities
-from tracemalloc import start
 from neo4j_data import (
     create_gene_entity,
     create_gene_sv_relationship,
@@ -13,7 +11,7 @@ from neo4j_data import (
     create_gene_sv_relationship,
     create_wide_to_long_relationship
 )
-import pandas as pd
+
 
 class Neo4jGraphBuilder:
     def __init__(self, all_data: dict):
@@ -70,7 +68,7 @@ class Neo4jGraphBuilder:
         )
 
         self.relationships['GENE_HAS_ALTERATION_CNA_IN'] = create_wide_to_long_relationship(self.all_data['cna'], 'Hugo_Symbol', 'Sample_Id', 'HAS_ALTERATION_CNA_IN', value_name='CNA_Value', drop_cols=['Entrez_Gene_Id'])
-        self.relationships['GENE_EXPRESSED_IN_SAMPLE'] = create_wide_to_long_relationship(self.all_data['mrna'], 'Hugo_Symbol', 'Sample_Id', 'HAS_EXPRESSION_IN', value_name='mRNA_expr_Value', drop_cols=['Entrez_Gene_Id'])
+        self.relationships['GENE_EXPRESSED_IN_SAMPLE'] = create_wide_to_long_relationship(self.all_data['mrna'].dropna(subset=['Hugo_Symbol']), 'Hugo_Symbol', 'Sample_Id', 'HAS_EXPRESSION_IN', value_name='mRNA_expr_Value', drop_cols=['Entrez_Gene_Id'])
         self.relationships['PROTEIN_EXPRESSED_IN_SAMPLE'] = create_wide_to_long_relationship(self.all_data['proteins'], 'Composite.Element.REF', 'Sample_Id', 'HAS_EXPRESSION_IN', value_name='Protein_expr_Value')
 
         print(f"Relationships built: {list(self.relationships.keys())}")
@@ -78,6 +76,7 @@ class Neo4jGraphBuilder:
         return self.relationships   
 
     def save_entities(self):
+        print("Saving entities...")
         pass
 
     def save_relationships(self):

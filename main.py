@@ -14,6 +14,7 @@ RENAME_MAP = {
             "data_mrna_seq_v2_rsem_zscores_ref_all_samples.txt": "mrna",
             "data_sv.txt": "sv"
         }
+NEO4J_IMPORT_PATH = "./../neo4j_container/.neo4j/import"
 
 if __name__ == '__main__':
     
@@ -26,7 +27,3 @@ if __name__ == '__main__':
     builder = Neo4jGraphBuilder(all_data)
     builder.build_entities()
     builder.build_relationships()
-    for rel in builder.relationships.keys():
-        print(
-            builder.relationships[rel]
-        )

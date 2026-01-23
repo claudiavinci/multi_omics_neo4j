@@ -128,7 +128,7 @@ def create_sv_entity(sv):
 
 def create_simple_relationship(start_entity, end_entity, rel_type: str, properties: dict = None): 
     # prendere gli id, aggiungere la colonna che serve per la relazione e creare il dataframe delle relazion 
-    rel = {':START_ID': start_entity, ':END_ID': end_entity, ':TYPE': rel_type}
+    rel = pd.DataFrame({':START_ID': start_entity, ':END_ID': end_entity, ':TYPE': rel_type})
     if properties:
         for key, value in properties.items():
             rel[key.lower()] = value
