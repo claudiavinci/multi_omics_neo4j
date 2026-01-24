@@ -26,7 +26,7 @@ class Neo4jGraphBuilder:
         self.entities['Patient'] = create_patient_entity(self.all_data['patients'])
         self.entities['Sample'] = create_sample_entity(self.all_data['samples'])
         self.entities['Mutation'] = create_mutation_entity(self.all_data['mutations'])
-        self.entities['Structural_Variant'] = create_sv_entity(self.all_data['sv'])
+        self.entities['StructuralVariant'] = create_sv_entity(self.all_data['sv'])
         # Add more entity creation calls as needed
 
         print(f"Entities built: {list(self.entities.keys())}")
@@ -36,33 +36,33 @@ class Neo4jGraphBuilder:
         print("Building relationships...")
         # Implement relationship creation logic here
         self.relationships['SAMPLE_FROM_PATIENT'] = create_simple_relationship(
-            start_entity = self.entities['Sample'][':ID'],
+            start_entity = self.entities['Sample']['sampleId:ID'],
             end_entity = self.all_data['samples']['PATIENT_ID'],
             rel_type = 'FROM_PATIENT'
         )
 
         self.relationships['GENE_ENCODES_PROTEIN'] = create_simple_relationship(
-            start_entity = self.entities['Protein'][':ID'].str.split("|").str[0],
-            end_entity = self.entities['Protein'][':ID'],
+            start_entity = self.entities['Protein']['proteinId:ID'].str.split("|").str[0],
+            end_entity = self.entities['Protein']['proteinId:ID'],
             rel_type = 'ENCODES'
         )
 
         self.relationships['GENE_HAS_ALTERATION_MUTATION'] = create_simple_relationship(
             start_entity = self.all_data['mutations']['Hugo_Symbol'],
-            end_entity = self.entities['Mutation'][':ID'],
+            end_entity = self.entities['Mutation']['mutationId:ID'],
             rel_type = 'HAS_ALTERATION'
         )
 
         self.relationships['MUTATION_OBSERVED_IN_SAMPLE'] = create_simple_relationship(
-            start_entity = self.entities['Mutation'][':ID'],
+            start_entity = self.entities['Mutation']['mutationId:ID'],
             end_entity = self.all_data['mutations']['Tumor_Sample_Barcode'],
             rel_type = 'OBSERVED_IN'
         )
 
-        self.relationships['GENE_HAS_ALTERATION_SV'] = create_gene_sv_relationship(self.all_data['sv'], self.entities['Structural_Variant'])
+        self.relationships['GENE_HAS_ALTERATION_SV'] = create_gene_sv_relationship(self.all_data['sv'], self.entities['StructuralVariant'])
         
         self.relationships['SV_OBSERVED_IN_SAMPLE'] = create_simple_relationship(
-            start_entity = self.entities['Structural_Variant'][':ID'],
+            start_entity = self.entities['StructuralVariant']['structuralVariantId:ID'],
             end_entity = self.all_data['sv']['Sample_Id'],
             rel_type ='OBSERVED_IN'
         )

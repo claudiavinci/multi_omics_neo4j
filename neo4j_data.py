@@ -1,16 +1,33 @@
 # from concurrent.futures import ThreadPoolExecutor, as_completed
 import pandas as pd 
+import re
 
-def format_entity(df, label, id_col, id_list=None, drop_cols: list = None):
+def format_string(string, flag):
+    string = string.lower()
+    string = re.sub(r"[\s_-]+", " ", string).strip()
+    parts = string.split()
+    if flag == "camel":
+        return parts[0] + ''.join(word.capitalize() for word in parts[1:])
+    elif flag == "pascal":
+        return ''.join(word.capitalize() for word in parts)
+
+def format_entity(df, label, id_col=None, id_list=None, drop_cols: list = None):
     if drop_cols:
         df.drop(columns=drop_cols, inplace=True)
-    df.columns = [col.lower() for col in df.columns]
-    if id_col == ":ID":
-        df.insert(0, id_col, id_list)
+    df.columns = [format_string(col, "camel") for col in df.columns]
+
+    camel_new_id = format_string(label, "camel") + "Id:ID"
+    pascal_label = format_string(label, "pascal")
+
+    if id_col is None and id_list is not None:
+        df.insert(0, camel_new_id, id_list)
+    elif id_col is not None:
+        df = df.rename(columns={format_string(id_col, "camel"): camel_new_id})
     else:
-        df = df.rename(columns={id_col.lower(): ":ID"})
-    df.insert(1, ":LABEL", label)
-    print(f"Created {label} entity with {len(df)} records and {len(df.columns)} columns")
+        raise ValueError("Either id_col or id_list must be provided.")
+
+    df.insert(1, ":LABEL", pascal_label)
+    print(f"Created {pascal_label} entity with {len(df)} records and {len(df.columns)} columns")
     return df
 
 def create_gene_entity(all_data):
@@ -117,13 +134,13 @@ def create_mutation_entity(mutations):
     ]
     df = mutations[mutation_cols].dropna(subset=["Hugo_Symbol", "Chromosome", "Start_Position", "Reference_Allele", "Tumor_Seq_Allele2"]).copy()
     IDs = df["Hugo_Symbol"] + ":" + df["Chromosome"].astype(str) + ":" + df["Start_Position"].astype(str) + ":" + df["Reference_Allele"] + ">" + df["Tumor_Seq_Allele2"]
-    df = format_entity(df, "Mutation", ":ID", id_list=IDs, drop_cols=["Hugo_Symbol"])
+    df = format_entity(df, "Mutation", id_list=IDs, drop_cols=["Hugo_Symbol"])
     return df
 
 def create_sv_entity(sv):
     df = sv.dropna(subset=["Sample_Id", "Site1_Chromosome", "Site1_Position", "Site2_Chromosome", "Site2_Position"]).copy()
     IDs = df["Sample_Id"] + "|" + df["Site1_Chromosome"].astype(str) + ":" + df["Site1_Position"].astype(str) + "|" + df["Site2_Chromosome"].astype(str) + ":" + df["Site2_Position"].astype(str)
-    df = format_entity(df, "Structural_Variant", ":ID", id_list=IDs, drop_cols=["Sample_Id","Site1_Hugo_Symbol", "Site2_Hugo_Symbol"])
+    df = format_entity(df, "Structural Variant", id_list=IDs, drop_cols=["Sample_Id","Site1_Hugo_Symbol", "Site2_Hugo_Symbol"])
     return df
 
 def create_simple_relationship(start_entity, end_entity, rel_type: str, properties: dict = None): 
@@ -131,15 +148,15 @@ def create_simple_relationship(start_entity, end_entity, rel_type: str, properti
     rel = pd.DataFrame({':START_ID': start_entity, ':END_ID': end_entity, ':TYPE': rel_type})
     if properties:
         for key, value in properties.items():
-            rel[key.lower()] = value
+            rel[format_string(key, "camel")] = value
     return rel
 
 def create_gene_sv_relationship(sv_data, sv_entity):
     gene_sv_df = pd.concat([
         sv_data[['Site1_Hugo_Symbol']].rename(columns={'Site1_Hugo_Symbol': 'gene'}).assign(
-            sv_id=sv_entity[':ID'], site="1"),
+            sv_id=sv_entity['structuralVariantId:ID'], site="1"),
         sv_data[['Site2_Hugo_Symbol']].rename(columns={'Site2_Hugo_Symbol': 'gene'}).assign(
-            sv_id=sv_entity[':ID'], site="2")
+            sv_id=sv_entity['structuralVariantId:ID'], site="2")
     ], ignore_index=True)
 
     return create_simple_relationship(
