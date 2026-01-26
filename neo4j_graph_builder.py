@@ -1,15 +1,19 @@
-from neo4j_data import (
+from neo4j_entities import (
     create_gene_entity,
-    create_gene_sv_relationship,
     create_protein_entity,
     create_patient_entity,
     create_sample_entity,
     create_mutation_entity,
     create_sv_entity,
     # Add more entity creation imports as needed
+)
+
+from neo4j_relationships import (
+    create_gene_sv_relationship,
     create_simple_relationship,
     create_gene_sv_relationship,
-    create_wide_to_long_relationship
+    create_wide_to_long_relationship,
+    # Add more relationship creation imports as needed
 )
 
 
@@ -75,6 +79,11 @@ class Neo4jGraphBuilder:
 
         return self.relationships   
 
+    def type_entity(self):
+        print("Typing entities...")
+
+        pass
+    
     def save_entities(self):
         print("Saving entities...")
         pass
