@@ -26,14 +26,18 @@ def get_column_type(series):
     if series.dtype == object:
         s_lower = series.str.lower()
         if set(s_lower.dropna()).issubset({"yes", "no"}):
-            series = s_lower.map({"yes": True, "no": False}).astype(bool)
+            series = s_lower.map({"yes": True, "no": False}).astype("boolean")
     # determine type and determine new header accordingly
-    if pd.api.types.is_integer_dtype(series):
+    if pd.api.types.is_bool_dtype(series):
+        typ = ':bool'
+    elif pd.api.types.is_integer_dtype(series):
         typ = ':int'
     elif pd.api.types.is_float_dtype(series):
-        typ = ':float'
-    elif pd.api.types.is_bool_dtype(series):
-        typ = ':bool'
+        if (series.dropna() % 1 == 0).all():
+            series = series.astype("Int64")
+            typ = ':int'
+        else:
+            typ = ':float'
     else: 
         typ = ':string'
     return series, typ

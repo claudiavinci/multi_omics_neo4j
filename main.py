@@ -30,6 +30,8 @@ if __name__ == '__main__':
     builder.save_entities()
     for e in builder.entities:
         print(builder.entities[e].head())
+        print(builder.entities[e].columns)
 
     for r in builder.relationships:
         print(builder.relationships[r].head())
+
