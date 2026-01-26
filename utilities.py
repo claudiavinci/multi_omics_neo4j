@@ -26,7 +26,7 @@ def get_column_type(series):
     if series.dtype == object:
         s_lower = series.str.lower()
         if set(s_lower.dropna()).issubset({"yes", "no"}):
-            series = s_lower.map({"yes": True, "no": False})
+            series = s_lower.map({"yes": True, "no": False}).astype(bool)
     # determine type and determine new header accordingly
     if pd.api.types.is_integer_dtype(series):
         typ = ':int'
