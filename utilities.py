@@ -1,5 +1,7 @@
 import re
 
+import pandas as pd
+
 def format_string(string, flag):
     string = string.lower()
     string = re.sub(r"[\s_-]+", " ", string).strip()
@@ -18,3 +20,20 @@ def wide_to_long_df(wide_df, id_col, var_name, value_name):
     )
     long_df = long_df.dropna(subset=[value_name])
     return long_df
+
+def get_column_type(series):
+    # convert "yes"/"no" to boolean
+    if series.dtype == object:
+        s_lower = series.str.lower()
+        if set(s_lower.dropna()).issubset({"yes", "no"}):
+            series = s_lower.map({"yes": True, "no": False})
+    # determine type and determine new header accordingly
+    if pd.api.types.is_integer_dtype(series):
+        typ = ':int'
+    elif pd.api.types.is_float_dtype(series):
+        typ = ':float'
+    elif pd.api.types.is_bool_dtype(series):
+        typ = ':bool'
+    else: 
+        typ = ':string'
+    return series, typ

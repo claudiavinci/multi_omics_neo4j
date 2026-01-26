@@ -1,20 +1,21 @@
 import pandas as pd 
-from utilities import format_string, wide_to_long_df
+from utilities import format_string, wide_to_long_df, get_column_type
 
 def create_simple_relationship(start_entity, end_entity, rel_type: str, properties: dict = None): 
     # prendere gli id, aggiungere la colonna che serve per la relazione e creare il dataframe delle relazion 
     rel = pd.DataFrame({':START_ID': start_entity, ':END_ID': end_entity, ':TYPE': rel_type})
     if properties:
         for key, value in properties.items():
-            rel[format_string(key, "camel")] = value
+            value, typ = get_column_type(value)
+            rel[format_string(key, "camel") + typ] = value
     return rel
 
 def create_gene_sv_relationship(sv_data, sv_entity):
     gene_sv_df = pd.concat([
         sv_data[['Site1_Hugo_Symbol']].rename(columns={'Site1_Hugo_Symbol': 'gene'}).assign(
-            sv_id=sv_entity['structuralVariantId:ID'], site="1"),
+            sv_id=sv_entity['structuralVariantId:ID'], site=1),
         sv_data[['Site2_Hugo_Symbol']].rename(columns={'Site2_Hugo_Symbol': 'gene'}).assign(
-            sv_id=sv_entity['structuralVariantId:ID'], site="2")
+            sv_id=sv_entity['structuralVariantId:ID'], site=2)
     ], ignore_index=True)
 
     return create_simple_relationship(

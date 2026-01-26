@@ -27,6 +27,7 @@ if __name__ == '__main__':
     builder = Neo4jGraphBuilder(all_data)
     builder.build_entities()
     builder.build_relationships()
+    builder.save_entities()
     for e in builder.entities:
         print(builder.entities[e].head())
 

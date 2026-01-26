@@ -16,6 +16,8 @@ from neo4j_relationships import (
     # Add more relationship creation imports as needed
 )
 
+from utilities import get_column_type
+
 
 class Neo4jGraphBuilder:
     def __init__(self, all_data: dict):
@@ -79,12 +81,15 @@ class Neo4jGraphBuilder:
 
         return self.relationships   
 
-    def type_entity(self):
-        print("Typing entities...")
+    def _type_entities(self):
+        print("Typing entities before saving...")
+        for e in self.entities:
+            for col in (c for c in self.entities[e].columns if not c.endswith(':ID') and c != ':LABEL'):
+                self.entities[e][col], typ  = get_column_type(self.entities[e][col])
+                self.entities[e].rename(columns={col: col + typ}, inplace=True)
 
-        pass
-    
     def save_entities(self):
+        self._type_entities()
         print("Saving entities...")
         pass
 
