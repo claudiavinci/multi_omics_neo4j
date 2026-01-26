@@ -1,6 +1,6 @@
 import docker
 from neo4j_connection import neo4jConnection
-from dataset_loader import DatasetLoader
+from dataset_handler import DatasetHandler
 from neo4j_graph_builder import Neo4jGraphBuilder
 
 N_FILES = 8
@@ -22,16 +22,18 @@ if __name__ == '__main__':
     # neo4jContainer = client.containers.get('neo4j')
     # neo4j = neo4jConnection(uri="bolt:localhost:7474", user="neo4j", password="admin1234")
 
-    loader = DatasetLoader(files_path=FILE_PATH, n_files=N_FILES, rename_map=RENAME_MAP)
-    all_data = loader.load_dataset()
+    data_handler = DatasetHandler(files_path=FILE_PATH, n_files=N_FILES, rename_map=RENAME_MAP, savepath= NEO4J_IMPORT_PATH)
+    all_data = data_handler.load_dataset()
     builder = Neo4jGraphBuilder(all_data)
-    builder.build_entities()
-    builder.build_relationships()
-    builder.save_entities()
-    for e in builder.entities:
-        print(builder.entities[e].head())
-        print(builder.entities[e].columns)
+    builder.build_graph()
 
-    for r in builder.relationships:
-        print(builder.relationships[r].head())
+    # for e in builder.entities:
+    #     print(builder.entities[e].head())
+
+    # for r in builder.relationships:
+    #     print(builder.relationships[r].head())
+
+    data_handler.save_CSV(builder.entities, "entities")
+    data_handler.save_CSV(builder.relationships, "relationships")
+
 

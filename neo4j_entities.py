@@ -17,6 +17,7 @@ def format_entity(df, label, id_col=None, id_list=None, drop_cols: list = None):
         raise ValueError("Either id_col or id_list must be provided.")
 
     df.insert(1, ":LABEL", pascal_label)
+    df.replace([".", "-", "NA", "N/A", "", " "], pd.NA, inplace=True)
     print(f"Created {pascal_label} entity with {len(df)} records and {len(df.columns)} columns")
     return df
 
@@ -125,6 +126,9 @@ def create_mutation_entity(mutations):
     df = mutations[mutation_cols].dropna(subset=["Hugo_Symbol", "Chromosome", "Start_Position", "Reference_Allele", "Tumor_Seq_Allele2"]).copy()
     IDs = df["Hugo_Symbol"] + ":" + df["Chromosome"].astype(str) + ":" + df["Start_Position"].astype(str) + ":" + df["Reference_Allele"] + ">" + df["Tumor_Seq_Allele2"]
     df = format_entity(df, "Mutation", id_list=IDs, drop_cols=["Hugo_Symbol"])
+    
+    # sistemare le colonne PolyPhen e SIFT
+    
     return df
 
 def create_sv_entity(sv):

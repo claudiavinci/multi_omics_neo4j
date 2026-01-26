@@ -1,12 +1,14 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import pandas as pd 
 from pathlib import Path 
+import os
 
-class DatasetLoader:
-    def __init__(self, files_path: str, n_files: int, rename_map: dict):
+class DatasetHandler:
+    def __init__(self, files_path: str, n_files: int, rename_map: dict, savepath: str):
         self.files_path = Path(files_path)
         self.n_files = n_files
         self.rename_map = rename_map
+        self.savepath = savepath
 
     def read_file(self, file: Path):
         df = pd.read_csv(file, sep="\t", encoding='utf-8', low_memory=False, comment="#")
@@ -26,4 +28,17 @@ class DatasetLoader:
                 key = self.rename_map.get(file_name, Path(file_name).stem)
                 data_all[key] = df
         return data_all
+    
+    def save_file(self, name, df):
+        filename = os.path.join(self.savepath, f'{name}.csv')
+        df.to_csv(filename, index=False)
+        print(f"Saved '{name}' to {filename}")
+        
+    def save_CSV(self, data: dict, data_type: str):
+        print(f"Saving {data_type}...")
+        with ThreadPoolExecutor(max_workers=self.n_files) as executor:
+            futures = [executor.submit(self.save_file, name, df) for name, df in data.items()]
+        for future in as_completed(futures):
+            future.result()
+
     
