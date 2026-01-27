@@ -29,11 +29,10 @@ if __name__ == '__main__':
 
     for e in builder.entities:
         print(builder.entities[e].head())
+    for r in builder.relationships:
+        print(builder.relationships[r].head())
 
-    # for r in builder.relationships:
-    #     print(builder.relationships[r].head())
-
-    # data_handler.save_CSV(builder.entities, "entities")
-    # data_handler.save_CSV(builder.relationships, "relationships")
+    data_handler.save_CSV(builder.entities, "entities")
+    data_handler.save_CSV(builder.relationships, "relationships")
 
 

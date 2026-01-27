@@ -26,7 +26,7 @@ class DatasetHandler:
             for future in as_completed(futures):
                 file_name, df = future.result()
                 key = self.rename_map.get(file_name, Path(file_name).stem)
-                data_all[key] = df
+                data_all[key] = df.replace([".", "-", "NA", "N/A", "", " "], pd.NA)
         return data_all
     
     def save_file(self, name, df):

@@ -1,7 +1,7 @@
 import pandas as pd 
 from utilities import format_string
 
-def format_entity(df, label, id_col=None, id_list=None, drop_cols: list = None, to_lower: list = None):
+def format_entity(df, label, id_col=None, inc_id=False, drop_cols: list = None, to_lower: list = None):
     # eliminare colonne
     if drop_cols:
         df.drop(columns=drop_cols, inplace=True)
@@ -15,8 +15,8 @@ def format_entity(df, label, id_col=None, id_list=None, drop_cols: list = None, 
     pascal_label = format_string(label, "pascal")
 
     # se ho creato un ID artificiale, va inserita la colonna
-    if id_col is None and id_list is not None:
-        df.insert(0, camel_new_id, id_list)
+    if id_col is None and inc_id:
+        df.insert(0, camel_new_id, df.index + 1)
     # se l'id è un colonna allora lo aggiorno con camelCase + :ID
     elif id_col is not None:
         df = df.rename(columns={format_string(id_col, "camel"): camel_new_id})
@@ -26,7 +26,6 @@ def format_entity(df, label, id_col=None, id_list=None, drop_cols: list = None, 
     # aggiungo la colonna label
     df.insert(1, ":LABEL", pascal_label)
     # faccio il replace di tutti i valori mancanti con NaN
-    df.replace([".", "-", "NA", "N/A", "", " "], pd.NA, inplace=True)
     print(f"Created {pascal_label} entity with {len(df)} records and {len(df.columns)} columns")
     return df
 
@@ -137,21 +136,21 @@ def create_mutation_entity(mutations):
         "t_ref_count",
         "t_depth"
     ]
-    df = mutations[mutation_cols].dropna(subset=["Hugo_Symbol", "Chromosome", "Start_Position", "Reference_Allele", "Tumor_Seq_Allele2"]).copy()
-    IDs = df["Hugo_Symbol"] + ":" + df["Chromosome"].astype(str) + ":" + df["Start_Position"].astype(str) + ":" + df["Reference_Allele"] + ">" + df["Tumor_Seq_Allele2"]
-    df['Variant_Classification'].replace("_", " ", inplace=True)
+    df = mutations[mutation_cols].dropna(subset=["Hugo_Symbol"]).copy()
+    df['mutation_keys'] = df["Chromosome"].astype(str) + ":" + df["Start_Position"].astype(str) + ":" + df["Reference_Allele"] + ">" + df["Tumor_Seq_Allele2"]
+    df['Variant_Classification'] = df['Variant_Classification'].str.replace("_", " ")
     df[['Sift_label', 'Sift_score']] = df['SIFT'].str.extract(r'(\w+)\(([\d\.]+)\)')
     df['Sift_score'] = df['Sift_score'].astype(float)
     df[['PolyPhen_label', 'PolyPhen_score']] = df['PolyPhen'].str.extract(r'(\w+)\(([\d\.]+)\)')
     df['PolyPhen_score'] = df['PolyPhen_score'].astype(float)
     to_lower = ['Variant_Classification', 'IMPACT', "Sift_label", "PolyPhen_label"]
-    df = format_entity(df, "Mutation", id_list=IDs, drop_cols=["Hugo_Symbol", "SIFT", "PolyPhen"], to_lower=to_lower)   
+    df = format_entity(df, "Mutation", inc_id=True, drop_cols=["Hugo_Symbol", "SIFT", "PolyPhen"], to_lower=to_lower)   
     return df
 
 def create_sv_entity(sv):
     df = sv.dropna(subset=["Sample_Id", "Site1_Chromosome", "Site1_Position", "Site2_Chromosome", "Site2_Position"]).copy()
-    IDs = df["Sample_Id"] + "|" + df["Site1_Chromosome"].astype(str) + ":" + df["Site1_Position"].astype(str) + "|" + df["Site2_Chromosome"].astype(str) + ":" + df["Site2_Position"].astype(str)
+    # IDs = df["Sample_Id"] + "|" + df["Site1_Chromosome"].astype(str) + ":" + df["Site1_Position"].astype(str) + "|" + df["Site2_Chromosome"].astype(str) + ":" + df["Site2_Position"].astype(str)
     df['SV_Status'] = df['SV_Status'].str.lower()
-    df = format_entity(df, "Structural Variant", id_list=IDs, drop_cols=["Sample_Id","Site1_Hugo_Symbol", "Site2_Hugo_Symbol"])
+    df = format_entity(df, "Structural Variant", inc_id=True, drop_cols=["Sample_Id","Site1_Hugo_Symbol", "Site2_Hugo_Symbol"])
     return df
 
