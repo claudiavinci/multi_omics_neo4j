@@ -1,11 +1,13 @@
 import pandas as pd 
 from utilities import format_string
 
-def format_entity(df, label, id_col=None, id_list=None, drop_cols: list = None):
+def format_entity(df, label, id_col=None, id_list=None, drop_cols: list = None, to_lower: list = None):
     if drop_cols:
         df.drop(columns=drop_cols, inplace=True)
+    if to_lower:
+        for col in to_lower:
+            df[col] = df[col].str.lower()
     df.columns = [format_string(col, "camel") for col in df.columns]
-
     camel_new_id = format_string(label, "camel") + "Id:ID"
     pascal_label = format_string(label, "pascal")
 
@@ -49,23 +51,28 @@ def create_protein_entity(proteins):
 def create_patient_entity(patients):
     patient_cols = [
         "PATIENT_ID",
+        "SUBTYPE",
+        "CANCER_TYPE_ACRONYM",
         "AGE",
         "SEX",
-        "CANCER_TYPE_ACRONYM",
-        "SUBTYPE",
         "AJCC_PATHOLOGIC_TUMOR_STAGE",
+        "AJCC_STAGING_EDITION",
         "PATH_T_STAGE",
         "PATH_N_STAGE",
         "PATH_M_STAGE",
         "HISTORY_NEOADJUVANT_TRTYN",
         "RADIATION_THERAPY",
-        "GENETIC_ANCESTRY_LABEL",
         "OS_STATUS",
         "OS_MONTHS",
-        "DAYS_LAST_FOLLOWUP"
+        "DAYS_LAST_FOLLOWUP",
+        "GENETIC_ANCESTRY_LABEL",
     ] 
     df = patients[patient_cols].dropna(subset=["PATIENT_ID"]).copy()
-    df = format_entity(df, "Patient", "PATIENT_ID")
+    print(df['OS_STATUS'].unique())
+    df['OS_STATUS'].replace("0:LIVING", "alive", inplace=True)
+    df['OS_STATUS'].replace("1:DECEASED", "deceased", inplace=True)
+    to_lower = ['SEX']
+    df = format_entity(df, "Patient", "PATIENT_ID", to_lower = to_lower)
     return df
 
 def create_sample_entity(samples):
@@ -76,16 +83,17 @@ def create_sample_entity(samples):
         "CANCER_TYPE_DETAILED",
         "TUMOR_TYPE",
         "GRADE",
-        "SAMPLE_TYPE",
+        "TISSUE_SOURCE_SITE_CODE",
         "TUMOR_TISSUE_SITE",
         "ANEUPLOIDY_SCORE",
-        "TMB_NONSYNONYMOUS",
+        "SAMPLE_TYPE",
         "MSI_SCORE_MANTIS",
+        "TMB_NONSYNONYMOUS",
         "TISSUE_SOURCE_SITE",
-        "TISSUE_SOURCE_SITE_CODE"
     ]
     df = samples[sample_cols].dropna(subset=["SAMPLE_ID"]).copy()
-    df = format_entity(df, "Sample", "SAMPLE_ID")
+    to_lower = ['CANCER_TYPE', 'CANCER_TYPE_DETAILED', 'TUMOR_TYPE', 'TUMOR_TISSUE_SITE', 'TISSUE_SOURCE_SITE', 'SAMPLE_TYPE']
+    df = format_entity(df, "Sample", "SAMPLE_ID", to_lower = to_lower)
     return df
 
 def create_mutation_entity(mutations):
@@ -134,6 +142,7 @@ def create_mutation_entity(mutations):
 def create_sv_entity(sv):
     df = sv.dropna(subset=["Sample_Id", "Site1_Chromosome", "Site1_Position", "Site2_Chromosome", "Site2_Position"]).copy()
     IDs = df["Sample_Id"] + "|" + df["Site1_Chromosome"].astype(str) + ":" + df["Site1_Position"].astype(str) + "|" + df["Site2_Chromosome"].astype(str) + ":" + df["Site2_Position"].astype(str)
+    df['SV_Status'] = df['SV_Status'].str.lower()
     df = format_entity(df, "Structural Variant", id_list=IDs, drop_cols=["Sample_Id","Site1_Hugo_Symbol", "Site2_Hugo_Symbol"])
     return df
 
