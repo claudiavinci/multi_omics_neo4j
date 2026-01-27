@@ -2,23 +2,30 @@ import pandas as pd
 from utilities import format_string
 
 def format_entity(df, label, id_col=None, id_list=None, drop_cols: list = None, to_lower: list = None):
+    # eliminare colonne
     if drop_cols:
         df.drop(columns=drop_cols, inplace=True)
+    # portare in minuscolo i valori della colonna
     if to_lower:
         for col in to_lower:
             df[col] = df[col].str.lower()
+    # portare gli attributi in camelCase e le label in pascalCase
     df.columns = [format_string(col, "camel") for col in df.columns]
     camel_new_id = format_string(label, "camel") + "Id:ID"
     pascal_label = format_string(label, "pascal")
 
+    # se ho creato un ID artificiale, va inserita la colonna
     if id_col is None and id_list is not None:
         df.insert(0, camel_new_id, id_list)
+    # se l'id è un colonna allora lo aggiorno con camelCase + :ID
     elif id_col is not None:
         df = df.rename(columns={format_string(id_col, "camel"): camel_new_id})
     else:
         raise ValueError("Either id_col or id_list must be provided.")
 
+    # aggiungo la colonna label
     df.insert(1, ":LABEL", pascal_label)
+    # faccio il replace di tutti i valori mancanti con NaN
     df.replace([".", "-", "NA", "N/A", "", " "], pd.NA, inplace=True)
     print(f"Created {pascal_label} entity with {len(df)} records and {len(df.columns)} columns")
     return df
@@ -68,7 +75,6 @@ def create_patient_entity(patients):
         "GENETIC_ANCESTRY_LABEL",
     ] 
     df = patients[patient_cols].dropna(subset=["PATIENT_ID"]).copy()
-    print(df['OS_STATUS'].unique())
     df['OS_STATUS'].replace("0:LIVING", "alive", inplace=True)
     df['OS_STATUS'].replace("1:DECEASED", "deceased", inplace=True)
     to_lower = ['SEX']
@@ -133,10 +139,13 @@ def create_mutation_entity(mutations):
     ]
     df = mutations[mutation_cols].dropna(subset=["Hugo_Symbol", "Chromosome", "Start_Position", "Reference_Allele", "Tumor_Seq_Allele2"]).copy()
     IDs = df["Hugo_Symbol"] + ":" + df["Chromosome"].astype(str) + ":" + df["Start_Position"].astype(str) + ":" + df["Reference_Allele"] + ">" + df["Tumor_Seq_Allele2"]
-    df = format_entity(df, "Mutation", id_list=IDs, drop_cols=["Hugo_Symbol"])
-    
-    # sistemare le colonne PolyPhen e SIFT
-    
+    df['Variant_Classification'].replace("_", " ", inplace=True)
+    df[['Sift_label', 'Sift_score']] = df['SIFT'].str.extract(r'(\w+)\(([\d\.]+)\)')
+    df['Sift_score'] = df['Sift_score'].astype(float)
+    df[['PolyPhen_label', 'PolyPhen_score']] = df['PolyPhen'].str.extract(r'(\w+)\(([\d\.]+)\)')
+    df['PolyPhen_score'] = df['PolyPhen_score'].astype(float)
+    to_lower = ['Variant_Classification', 'IMPACT', "Sift_label", "PolyPhen_label"]
+    df = format_entity(df, "Mutation", id_list=IDs, drop_cols=["Hugo_Symbol", "SIFT", "PolyPhen"], to_lower=to_lower)   
     return df
 
 def create_sv_entity(sv):
