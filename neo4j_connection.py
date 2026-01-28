@@ -1,25 +1,27 @@
 from neo4j import GraphDatabase
+from pathlib import Path
 
 class neo4jConnection:
-    def __init__(self, uri, user, password ):
+    def __init__(self, uri, user, password, import_path):
         self.__uri = uri
         self.__user = user
         self.__password = password
         self.driver = None
+        self.import_path = import_path
         try:
             self.driver = GraphDatabase.driver(self.__uri, auth=(self.__user, self.__password))
             print("Driver creato con successo.")
         except Exception as e:
             print("Impossibile creare il driver: ", e)
     
-    def closeConnection(self):
+    def close_connection(self):
         if self.driver is not None:
             self.driver.close()
             print("Connessione chiusa con successo.")
         else: 
             print("Nessuna connessione corrente.")
 
-    def executeQuery(self, query, db = None):
+    def execute_query(self, query, db = None):
         session = None
         response = None
         try:

@@ -144,7 +144,7 @@ def create_mutation_entity(mutations):
     df[['PolyPhen_label', 'PolyPhen_score']] = df['PolyPhen'].str.extract(r'(\w+)\(([\d\.]+)\)')
     df['PolyPhen_score'] = df['PolyPhen_score'].astype(float)
     to_lower = ['Variant_Classification', 'IMPACT', "Sift_label", "PolyPhen_label"]
-    df = format_entity(df, "Mutation", inc_id=True, drop_cols=["Hugo_Symbol", "SIFT", "PolyPhen"], to_lower=to_lower)   
+    df = format_entity(df, "Mutation", inc_id=True, drop_cols=["Hugo_Symbol", "SIFT", "PolyPhen", "Chromosome"], to_lower=to_lower)   
     return df
 
 def create_sv_entity(sv):

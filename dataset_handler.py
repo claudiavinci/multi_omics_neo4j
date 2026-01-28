@@ -29,15 +29,15 @@ class DatasetHandler:
                 data_all[key] = df.replace([".", "-", "NA", "N/A", "", " "], pd.NA)
         return data_all
     
-    def save_file(self, name, df):
-        filename = os.path.join(self.savepath, f'{name}.csv')
+    def save_file(self, name, df, data_type: str):
+        filename = os.path.join(self.savepath + data_type, f'{name}.csv')
         df.to_csv(filename, index=False)
         print(f"Saved '{name}' to {filename}")
         
     def save_CSV(self, data: dict, data_type: str):
         print(f"Saving {data_type}...")
         with ThreadPoolExecutor(max_workers=self.n_files) as executor:
-            futures = [executor.submit(self.save_file, name, df) for name, df in data.items()]
+            futures = [executor.submit(self.save_file, name, df, data_type) for name, df in data.items()]
         for future in as_completed(futures):
             future.result()
 
