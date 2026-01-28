@@ -80,7 +80,6 @@ class Neo4jGraphBuilder:
     def _type_entities(self):
         print("Typing entities...")
         for e in self.entities:
-
             for col in (c for c in self.entities[e].columns if not c.endswith(':ID') and c != ':LABEL'):
                 self.entities[e][col], typ  = get_column_type(self.entities[e][col])
                 self.entities[e].rename(columns={col: col + typ}, inplace=True)
