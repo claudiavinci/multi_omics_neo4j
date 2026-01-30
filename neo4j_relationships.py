@@ -8,6 +8,7 @@ def create_simple_relationship(start_entity, end_entity, rel_type: str, properti
         for key, value in properties.items():
             value, typ = get_column_type(value)
             rel[format_string(key, "camel") + typ] = value
+    rel = rel.drop_duplicates()
     return rel
 
 def create_gene_sv_relationship(sv_data, sv_entity):

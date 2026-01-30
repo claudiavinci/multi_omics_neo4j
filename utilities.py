@@ -29,7 +29,7 @@ def get_column_type(series):
             series = s_lower.map({"yes": True, "no": False}).astype("boolean")
     # determine type and determine new header accordingly
     if pd.api.types.is_bool_dtype(series):
-        typ = ':bool'
+        typ = ':boolean'
     elif pd.api.types.is_integer_dtype(series):
         typ = ':int'
     elif pd.api.types.is_float_dtype(series):

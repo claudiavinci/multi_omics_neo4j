@@ -36,4 +36,11 @@ class neo4jConnection:
             if session is not None:
                 session.close()
         return response
-        
+    
+    def data_deleter(self):
+        delete = "MATCH (n) DETACH DELETE (n)"
+        try:
+            self.execute_query(delete)
+            print("Tutti i dati sono stati eliminati da neo4j.")
+        except Exception as e:
+            print(f"Impossibile eliminare i dati da neo4j: {e}")

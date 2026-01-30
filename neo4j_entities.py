@@ -10,13 +10,21 @@ def format_entity(df, label, id_col=None, inc_id=False, drop_cols: list = None, 
         for col in to_lower:
             df[col] = df[col].str.lower()
     # portare gli attributi in camelCase e le label in pascalCase
+    if id_col:
+        df = df.drop_duplicates(subset=[id_col])
+
     df.columns = [format_string(col, "camel") for col in df.columns]
+    
     camel_new_id = format_string(label, "camel") + "Id:ID"
     pascal_label = format_string(label, "pascal")
 
     # se ho creato un ID artificiale, va inserita la colonna
     if id_col is None and inc_id:
-        df.insert(0, camel_new_id, df.index + 1)
+        if label == "Mutation":
+            df.insert(0, camel_new_id, ['m' + str(i+1) for i in df.index])
+        elif label == "Structural Variant":
+            df.insert(0, camel_new_id, ['sv' + str(i+1) for i in df.index])     
+
     # se l'id è un colonna allora lo aggiorno con camelCase + :ID
     elif id_col is not None:
         df = df.rename(columns={format_string(id_col, "camel"): camel_new_id})
@@ -44,12 +52,11 @@ def create_gene_entity(all_data):
                         (sv_genes, ["Hugo_Symbol"]),
                         (proteins_genes["Hugo_Symbol"], ["Hugo_Symbol"])]:
         gene_df = gene_df.merge(df, on=on_cols, how="outer").drop_duplicates()
-
     gene_df = format_entity(gene_df, "Gene", "Hugo_Symbol")
     return gene_df
 
 def create_protein_entity(proteins):
-    df = proteins[["Composite.Element.REF"]].dropna(subset=["Composite.Element.REF"]).drop_duplicates().copy()
+    df = proteins[["Composite.Element.REF"]].dropna(subset=["Composite.Element.REF"]).copy()
     df["Protein_Name"] = df["Composite.Element.REF"].str.split("|").str[1].copy()
     df = format_entity(df, "Protein", "Composite.Element.REF")
     return df
