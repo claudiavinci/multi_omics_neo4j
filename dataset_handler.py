@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import pandas as pd 
 from pathlib import Path 
 import os
+import subprocess
 
 class DatasetHandler:
     def __init__(self, files_path: str, n_files: int, rename_map: dict, savepath: str):
@@ -40,5 +41,14 @@ class DatasetHandler:
             futures = [executor.submit(self.save_file, name, df, data_type) for name, df in data.items()]
         for future in as_completed(futures):
             future.result()
+    
+    def copy_CSV_to_container(self):
+        try:
+            print("Copying dataset into neo4j container...")
+            subprocess.run(['docker', 'cp', f'{self.savepath}entities', 'neo4j:/var/lib/neo4j/import/'], check=True)
+            subprocess.run(['docker', 'cp', f'{self.savepath}relationships', 'neo4j:/var/lib/neo4j/import/'], check=True)
+        except subprocess.CalledProcessError as e: 
+            print(f"Docker error occurred: {e}")
+
 
     
