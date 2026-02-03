@@ -28,3 +28,6 @@ The Knowledge Graph enables complex queries and intuitive data exploration for c
 - Neo4j    
 - Python  
 - Docker
+
+## Getting started
+Run docker compose inside neo4j_container folder to get the Neo4j container
