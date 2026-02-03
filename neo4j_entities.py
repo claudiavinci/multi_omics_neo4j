@@ -33,7 +33,6 @@ def format_entity(df, label, id_col=None, inc_id=False, drop_cols: list = None, 
 
     # aggiungo la colonna label
     df.insert(1, ":LABEL", pascal_label)
-    # faccio il replace di tutti i valori mancanti con NaN
     print(f"Created {pascal_label} entity with {len(df)} records and {len(df.columns)} columns")
     return df
 

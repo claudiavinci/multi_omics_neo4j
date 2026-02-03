@@ -1,0 +1,25 @@
+services:
+  neo4j:
+    cpus: 4
+    mem_limit: "8g"
+    mem_reservation: "8096m"
+    container_name: neo4j
+    build:
+      context: ./.build
+      dockerfile: neo4j.Dockerfile
+    restart: always
+    ports:
+      - 7474:7474
+      - 7687:7687
+    environment:
+      - NEO4J_AUTH=neo4j/admin1234
+    volumes:
+      - data:/var/lib/neo4j/data
+      - logs:/var/lib/neo4j/logs
+      - import:/var/lib/neo4j/import
+volumes:
+  data:
+  logs:
+  import:
+    
+
