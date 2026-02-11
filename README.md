@@ -3,7 +3,7 @@
 A Knowledge Graph (KG) project for integrating and analyzing **multi-omics data** from the **TCGA-BRCA breast cancer dataset**.  
 The graph-based approach connects genomic, transcriptomic, proteomic, and clinical information to support flexible exploration and discovery of biological relationships.
 
-Project report: https://drive.google.com/file/d/13xapTcgsWYCjfSuD-QW9JsyxhHUr_O7b/view?usp=sharing
+Project report: https://drive.google.com/file/d/1I-CtrcwzPNb3SlWiz6dRBLFwFnRwoEPR/view?usp=drive_link
 
 ## Overview
 
