@@ -22,12 +22,15 @@ The Knowledge Graph enables complex queries and intuitive data exploration for c
    Modeling and implementation of the KG in **Neo4j**
 
 3. **Querying**  
-   Example **Cypher** queries to explore interactions and biological patterns
+   Cypher_queries.cypher: Example **Cypher** queries to explore interactions and biological patterns
+
+4. **GDC Graph Analysis**
+   GDC_queries.cypher: Centrality (PageRank algorithm) of the KG; community detection (Louvain algorithm); centrality for each community; average centrality inside each community.
 
 ## Technologies
 
 - TCGA-BRCA dataset  
-- Neo4j    
+- Neo4j with GDC library    
 - Python  
 - Docker
 
