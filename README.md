@@ -4,6 +4,7 @@ A Knowledge Graph (KG) project for integrating and analyzing **multi-omics data*
 The graph-based approach connects genomic, transcriptomic, proteomic, and clinical information to support flexible exploration and discovery of biological relationships.
 
 Project report: https://drive.google.com/file/d/1I-CtrcwzPNb3SlWiz6dRBLFwFnRwoEPR/view?usp=drive_link
+
 Database dump: https://drive.google.com/file/d/1lokFuEbUMVK4XSfwnMm12VY7xHONTJYZ/view?usp=drive_link
 
 ## Overview
